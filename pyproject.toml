@@ -1,0 +1,73 @@
+[project]
+name = "moocs-rating-tools"
+version = "1.0.0"
+description = "磨課師 AI 課程系統性盤點工具：影音前處理、LLM 能力評分、真人標註交叉驗證與互動儀表板"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+	{ name = "國立臺灣師範大學電機工程學系" },
+]
+keywords = ["moocs", "course-rating", "ai-literacy", "llm-evaluation", "whisper"]
+
+# 核心依賴：評分（③）、一致性比對（④）、分級（⑤）、儀表板（⑥）
+# 影音前處理需要的 whisper / opencv 體積很大（含 torch），移到 preprocess extra，
+# 只要評分與儀表板的使用者不必安裝。moocs_core 以函式內延遲載入配合。
+dependencies = [
+	"anthropic>=0.40.0",
+	"python-dotenv>=1.0.0",
+	"numpy>=1.26.0",
+	"openpyxl>=3.1.5",
+	"python-docx>=1.1.0",
+	"requests>=2.32.0",
+]
+
+[project.optional-dependencies]
+# ② 影音前處理（不耗 API 額度）。另需外部工具 ffmpeg / ffprobe
+preprocess = [
+	"openai-whisper>=20231117",
+	"opencv-python>=4.9.0",
+	"pillow>=10.0.0",
+	"yt-dlp>=2024.4.9",
+]
+# ① 自平臺抓取課程清單。安裝後需執行 playwright install chromium
+fetch = [
+	"playwright>=1.44.0",
+]
+# 完整管線
+all = [
+	"openai-whisper>=20231117",
+	"opencv-python>=4.9.0",
+	"pillow>=10.0.0",
+	"yt-dlp>=2024.4.9",
+	"playwright>=1.44.0",
+]
+build = [
+	"pyinstaller>=6.6.0",
+]
+legacy = [
+	# 舊版 Gemini 備援路徑。未安裝不影響執行（moocs_core 以 try/except 載入）
+	"google-genai>=1.0.0",
+]
+
+[project.scripts]
+moocs-fetch      = "fetch_courses:main"
+moocs-preprocess = "preprocess_courses:main"
+moocs-rate       = "rate_courses:main"
+moocs-compare    = "compare_students:main"
+moocs-bundles    = "build_bundles:main"
+moocs-dashboard  = "build_dashboard:main"
+
+[tool.pyinstaller]
+noconfirm = true
+clean = true
+onefile = true
+
+[tool.pyinstaller.targets]
+# 打包成 exe 的工具。前處理與抓取需要 ffmpeg／瀏覽器核心等外部執行檔，
+# 不隨 exe 附帶，故交付包只含「不需外部執行檔」的三支工具。
+scripts = [
+	"rate_courses.py",
+	"build_bundles.py",
+	"build_dashboard.py",
+]

@@ -1,0 +1,64 @@
+{
+  "_comment": "管線參數。改這份檔即可調整抽樣、抽幀、音訊、模型與分級門檻，不需改程式碼。",
+
+  "sampling": {
+    "_comment": "章節感知抽樣：短課全取，長課每章節取前1+中1，再受 max_sample 硬上限約束",
+    "max_per_chapter": 2,
+    "short_course_threshold": 8,
+    "max_sample": 8,
+    "videos_per_course": 5
+  },
+
+  "frames": {
+    "_comment": "抽幀位置為影片的 1/4、2/4、3/4；合併接觸表為 5 欄",
+    "frames_per_video": 3,
+    "skip_seconds": 10,
+    "merge_cols": 5,
+    "thumb_width": 384,
+    "thumb_height": 216
+  },
+
+  "audio": {
+    "_comment": "開頭／中間／結尾各取一段",
+    "segments": 3,
+    "segment_minutes": 2
+  },
+
+  "transcript": {
+    "_comment": "whisper_model 於本機執行，不耗 API 額度；truncate_chars 為送入模型的逐字稿長度",
+    "whisper_model": "base",
+    "truncate_chars": 5000
+  },
+
+  "llm": {
+    "_comment": "同一輸入做 num_agents 次獨立呼叫；temperature 刻意不設定（該模型帶此參數會回 400）",
+    "model_priority": ["claude-sonnet-4-6"],
+    "num_agents": 3,
+    "max_tokens": 2500,
+    "cost_cap_usd": 9.5,
+    "price_per_mtok": { "in": 3.0, "out": 15.0, "cache_read": 0.3, "cache_write": 3.75 }
+  },
+
+  "grading": {
+    "_comment": "推薦均值 = mean(AI 推薦度, 同學1, 同學2)，再以門檻切 A+／A／C",
+    "a_threshold": 3.67,
+    "aplus_threshold": 4.33
+  },
+
+  "limits": {
+    "_comment": "daily_limit 用於分批執行避免單日額度耗盡；null = 不限",
+    "daily_limit": 30
+  },
+
+  "files": {
+    "queue": "moocs_queue.json",
+    "results": "analysis_results.json",
+    "output_csv": "rating.csv",
+    "failed_csv": "failed.csv",
+    "cookies": "cookies.txt",
+    "session": "session.json",
+    "merged_dir": "merged",
+    "videos_dir": "videos",
+    "audio_dir": "audio"
+  }
+}

@@ -1,0 +1,16 @@
+# 統一換行：程式與設定檔在版控中一律 LF，避免跨平台 diff 雜訊
+* text=auto eol=lf
+
+*.py    text eol=lf
+*.json  text eol=lf
+*.txt   text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.html  text eol=lf
+
+# 二進位
+*.jpg   binary
+*.png   binary
+*.xlsx  binary
+*.exe   binary
+*.zip   binary

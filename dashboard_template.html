@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --tier-c: #86b6ef;
+    --tier-a: #3987e5;
+    --tier-aplus: #1c5cab;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --critical: #d03b3b;
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", "Noto Sans TC",
+            "Microsoft JhengHei", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #f0efec;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --tier-c: #184f95;
+      --tier-a: #2a78d6;
+      --tier-aplus: #86b6ef;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --ink-1: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --tier-c: #184f95;
+    --tier-a: #2a78d6;
+    --tier-aplus: #86b6ef;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink-1);
+    font-family: var(--sans); font-size: 15px; line-height: 1.6;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 16px 80px; }
+
+  header h1 { font-size: 1.6rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  header .sub { color: var(--ink-2); font-size: 0.9rem; margin: 0; }
+  header .meta { color: var(--ink-muted); font-size: 0.8rem; margin: 10px 0 0; }
+  .theme-btn {
+    position: absolute; top: 28px; right: 16px;
+    background: var(--surface-1); color: var(--ink-2);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 14px; font: inherit; font-size: 0.8rem; cursor: pointer;
+  }
+  .theme-btn:hover { color: var(--ink-1); }
+
+  .notice {
+    margin: 20px 0 0; padding: 12px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface-1);
+    font-size: 0.85rem; color: var(--ink-2);
+  }
+  .notice b { color: var(--ink-1); }
+
+  /* ---- stat tiles ---- */
+  .tiles {
+    display: grid; gap: 12px; margin: 24px 0 8px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .tile .k { font-size: 0.78rem; color: var(--ink-2); margin-bottom: 4px; }
+  .tile .v { font-size: 1.7rem; font-weight: 650; letter-spacing: -0.02em; }
+  .tile .n { font-size: 0.74rem; color: var(--ink-muted); }
+
+  /* ---- tabs ---- */
+  nav.tabs { display: flex; gap: 4px; margin: 28px 0 0; flex-wrap: wrap;
+             border-bottom: 1px solid var(--grid); }
+  nav.tabs button {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 9px 14px; font: inherit; font-size: 0.9rem;
+    color: var(--ink-2); cursor: pointer;
+  }
+  nav.tabs button[aria-selected="true"] {
+    color: var(--ink-1); border-bottom-color: var(--series-1); font-weight: 600;
+  }
+  section[hidden] { display: none; }
+
+  /* ---- filters ---- */
+  .filters {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin: 20px 0; padding: 14px; background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .filters label { font-size: 0.78rem; color: var(--ink-2); display: grid; gap: 4px; }
+  .filters select, .filters input {
+    font: inherit; font-size: 0.85rem; padding: 6px 9px; color: var(--ink-1);
+    background: var(--page); border: 1px solid var(--border); border-radius: 7px;
+    min-width: 120px;
+  }
+  .filters input[type="search"] { min-width: 210px; }
+  .filters .reset {
+    margin-left: auto; align-self: end; background: none; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 7px; padding: 7px 12px;
+    font: inherit; font-size: 0.82rem; color: var(--ink-2);
+  }
+  .count { font-size: 0.82rem; color: var(--ink-2); margin: 0 0 14px; }
+
+  /* ---- course cards ---- */
+  .cards { display: grid; gap: 14px; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 18px;
+  }
+  .card .top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .card h3 { font-size: 1.02rem; margin: 0; flex: 1 1 320px; line-height: 1.4; }
+  .card .cid { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-muted); }
+  .chip {
+    display: inline-block; font-size: 0.74rem; padding: 2px 9px;
+    border-radius: 999px; border: 1px solid var(--border); color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .chip.tier { color: #fff; border-color: transparent; font-weight: 600; }
+  .chip.tier.aplus { background: var(--tier-aplus); }
+  .chip.tier.a { background: var(--tier-a); }
+  .chip.tier.c { background: var(--tier-c); color: var(--ink-1); }
+  .chip.cap { font-family: var(--mono); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 0; }
+  .summary { font-size: 0.88rem; color: var(--ink-2); margin: 12px 0 0; }
+
+  /* 六面向 bars */
+  .facets { margin: 14px 0 0; display: grid; gap: 7px; }
+  .facet { display: grid; grid-template-columns: 76px 1fr 30px; gap: 10px;
+           align-items: center; font-size: 0.78rem; }
+  .facet .fname { color: var(--ink-2); }
+  .facet .track { position: relative; height: 8px; background: var(--grid);
+                  border-radius: 4px; overflow: visible; }
+  .facet .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px;
+                 background: var(--series-1); }
+  .facet .fval { font-family: var(--mono); text-align: right; color: var(--ink-1); }
+
+  details.why { margin: 12px 0 0; }
+  details.why summary {
+    font-size: 0.8rem; color: var(--ink-2); cursor: pointer;
+    list-style: none; padding: 4px 0;
+  }
+  details.why summary::-webkit-details-marker { display: none; }
+  details.why summary::before { content: "▸ "; color: var(--ink-muted); }
+  details.why[open] summary::before { content: "▾ "; }
+  details.why dl { margin: 8px 0 0; font-size: 0.82rem; }
+  details.why dt { color: var(--ink-1); font-weight: 600; margin: 8px 0 2px; }
+  details.why dd { margin: 0; color: var(--ink-2); }
+  .diverge { color: var(--critical); font-size: 0.78rem; margin: 8px 0 0; }
+
+  /* ---- charts ---- */
+  .charts { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .chartcard {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 18px;
+  }
+  .chartcard h3 { font-size: 0.95rem; margin: 0 0 4px; }
+  .chartcard p.note { font-size: 0.78rem; color: var(--ink-muted); margin: 0 0 14px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem;
+            color: var(--ink-2); margin: 0 0 12px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+              margin-right: 5px; vertical-align: -1px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { font-family: var(--sans); fill: var(--ink-2); }
+  svg .tick { font-size: 11px; fill: var(--ink-muted); }
+  svg .vlabel { font-size: 11px; fill: var(--ink-1); font-family: var(--mono); }
+  svg .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg .baseline { stroke: var(--axis); stroke-width: 1; }
+  svg .bar { transition: opacity .12s; }
+  svg g.hit:hover .bar { opacity: 0.78; }
+  svg g.hit { cursor: default; }
+
+  /* ---- bundles ---- */
+  .bundle { background: var(--surface-1); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 16px 18px; margin: 0 0 14px; }
+  .bundle h3 { font-size: 1rem; margin: 0 0 6px; }
+  .bundle .bmeta { font-size: 0.8rem; color: var(--ink-2); margin: 0 0 10px; }
+  .bundle ol { margin: 10px 0 0; padding-left: 22px; font-size: 0.88rem; }
+  .bundle ol li { margin: 4px 0; }
+
+  /* ---- table ---- */
+  .tablewrap { overflow-x: auto; background: var(--surface-1);
+               border: 1px solid var(--border); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+  th, td { text-align: left; padding: 8px 11px; border-bottom: 1px solid var(--grid);
+           white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--surface-1); color: var(--ink-1);
+       font-weight: 600; cursor: pointer; }
+  th:hover { color: var(--series-1); }
+  td.num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--page); }
+  .dl { margin: 14px 0 0; font-size: 0.82rem; }
+  .dl button { font: inherit; font-size: 0.82rem; padding: 7px 13px; cursor: pointer;
+               background: var(--surface-1); color: var(--ink-1);
+               border: 1px solid var(--border); border-radius: 7px; }
+
+  .empty { color: var(--ink-muted); font-size: 0.88rem; padding: 28px 0; text-align: center; }
+  footer { margin: 48px 0 0; padding: 18px 0 0; border-top: 1px solid var(--grid);
+           font-size: 0.78rem; color: var(--ink-muted); }
+  footer code { font-family: var(--mono); }
+
+  #tip {
+    position: fixed; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--ink-1); color: var(--surface-1); font-size: 0.78rem;
+    padding: 6px 10px; border-radius: 7px; max-width: 280px; z-index: 50;
+    line-height: 1.45;
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 24px 16px 60px; }
+    .theme-btn { position: static; margin: 12px 0 0; }
+    .facet { grid-template-columns: 68px 1fr 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <button class="theme-btn" id="themeBtn" type="button">切換深淺色</button>
+
+  <header>
+    <h1>__TITLE__</h1>
+    <p class="sub">__SUBTITLE__</p>
+    <p class="meta" id="meta"></p>
+  </header>
+
+  <div class="notice" id="notice"></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="overview" aria-selected="true">課程總覽</button>
+    <button role="tab" data-tab="charts" aria-selected="false">分布圖表</button>
+    <button role="tab" data-tab="bundles" aria-selected="false">主題套裝</button>
+    <button role="tab" data-tab="agree" aria-selected="false">AI 與真人一致性</button>
+    <button role="tab" data-tab="table" aria-selected="false">資料表</button>
+  </nav>
+
+  <section id="tab-overview">
+    <div class="filters">
+      <label>搜尋課名／關鍵字
+        <input type="search" id="q" placeholder="例如：機器學習">
+      </label>
+      <label>評級 <select id="fGrade"></select></label>
+      <label>能力標籤 <select id="fCap"></select></label>
+      <label>難易度 <select id="fDiff"></select></label>
+      <label>課程節奏 <select id="fPace"></select></label>
+      <label>修課對象 <select id="fAud"></select></label>
+      <label>排序 <select id="fSort">
+        <option value="rec">推薦均值（高→低）</option>
+        <option value="rec-asc">推薦均值（低→高）</option>
+        <option value="name">課程名稱</option>
+        <option value="depth">內容深度</option>
+        <option value="hands">實作程度</option>
+        <option value="clear">結構清晰度</option>
+      </select></label>
+      <button class="reset" id="reset" type="button">清除條件</button>
+    </div>
+    <p class="count" id="count"></p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section id="tab-charts" hidden>
+    <div class="charts" id="charts"></div>
+  </section>
+
+  <section id="tab-bundles" hidden>
+    <div id="bundles"></div>
+  </section>
+
+  <section id="tab-agree" hidden>
+    <div id="agree"></div>
+  </section>
+
+  <section id="tab-table" hidden>
+    <div class="tablewrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <p class="dl"><button id="csv" type="button">下載目前資料表為 CSV</button></p>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<div id="tip" role="status"></div>
+
+<script id="payload" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById("payload").textContent);
+const FACETS = ["趣味度", "內容深度", "實作程度", "結構清晰度", "應用廣度"];
+const AUD = ["通識素養型", "跨域應用型", "技術實作型"];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
+
+/* ---------- 主題切換 ---------- */
+const themeBtn = $("#themeBtn");
+try {
+  const saved = localStorage.getItem("moocs-theme");
+  if (saved) document.documentElement.dataset.theme = saved;
+} catch (e) { /* 隱私模式或封鎖儲存時忽略 */ }
+themeBtn.addEventListener("click", () => {
+  const dark = getComputedStyle(document.body).backgroundColor === "rgb(13, 13, 13)";
+  const next = dark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("moocs-theme", next); } catch (e) {}
+  drawCharts(); drawAgree();
+});
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip");
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.opacity = "1";
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY - r.height - 10;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y < 8) y = e.clientY + 18;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.style.opacity = "0"; }
+function bindTip(el, html) {
+  el.addEventListener("mouseenter", (e) => showTip(e, html));
+  el.addEventListener("mousemove", (e) => showTip(e, html));
+  el.addEventListener("mouseleave", hideTip);
+}
+
+/* ---------- 標頭 ---------- */
+$("#meta").textContent = DATA.meta.join("　·　");
+$("#notice").innerHTML = DATA.notice;
+$("#footer").innerHTML = DATA.footer;
+
+$("#tiles").innerHTML = DATA.tiles.map((t) => `
+  <div class="tile">
+    <div class="k">${esc(t.k)}</div>
+    <div class="v">${esc(t.v)}</div>
+    <div class="n">${esc(t.n || "")}</div>
+  </div>`).join("");
+
+/* ---------- 分頁 ---------- */
+document.querySelectorAll("nav.tabs button").forEach((b) => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("nav.tabs button").forEach((o) =>
+      o.setAttribute("aria-selected", String(o === b)));
+    document.querySelectorAll("section").forEach((s) => (s.hidden = true));
+    $("#tab-" + b.dataset.tab).hidden = false;
+    if (b.dataset.tab === "charts") drawCharts();
+    if (b.dataset.tab === "agree") drawAgree();
+  });
+});
+
+/* ---------- 篩選器 ---------- */
+const courses = DATA.courses;
+function fillSelect(sel, label, values) {
+  sel.innerHTML = `<option value="">${label}</option>` +
+    values.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+}
+const uniq = (fn) => [...new Set(courses.map(fn).filter(Boolean))].sort();
+fillSelect($("#fGrade"), "全部", ["A+", "A", "C"].filter((g) => courses.some((c) => c.grade === g)));
+fillSelect($("#fCap"), "全部", [...new Set(courses.flatMap((c) => c.caps || []))].sort());
+fillSelect($("#fDiff"), "全部", uniq((c) => c.diff));
+fillSelect($("#fPace"), "全部", uniq((c) => c.pace));
+fillSelect($("#fAud"), "全部", AUD.filter((a) => courses.some((c) => c.aud && c.aud[a])));
+
+const controls = ["#q", "#fGrade", "#fCap", "#fDiff", "#fPace", "#fAud", "#fSort"];
+controls.forEach((s) => $(s).addEventListener("input", render));
+$("#reset").addEventListener("click", () => {
+  controls.forEach((s) => ($(s).value = ""));
+  $("#fSort").value = "rec";
+  render();
+});
+
+const SORTS = {
+  rec: (a, b) => (num(b.rec) ?? -1) - (num(a.rec) ?? -1),
+  "rec-asc": (a, b) => (num(a.rec) ?? 99) - (num(b.rec) ?? 99),
+  name: (a, b) => a.name.localeCompare(b.name, "zh-Hant"),
+  depth: (a, b) => (b.scores["內容深度"] ?? -1) - (a.scores["內容深度"] ?? -1),
+  hands: (a, b) => (b.scores["實作程度"] ?? -1) - (a.scores["實作程度"] ?? -1),
+  clear: (a, b) => (b.scores["結構清晰度"] ?? -1) - (a.scores["結構清晰度"] ?? -1),
+};
+
+function current() {
+  const q = $("#q").value.trim().toLowerCase();
+  const g = $("#fGrade").value, cap = $("#fCap").value;
+  const d = $("#fDiff").value, p = $("#fPace").value, a = $("#fAud").value;
+  return courses.filter((c) => {
+    if (g && c.grade !== g) return false;
+    if (cap && !(c.caps || []).includes(cap)) return false;
+    if (d && c.diff !== d) return false;
+    if (p && c.pace !== p) return false;
+    if (a && !(c.aud && c.aud[a])) return false;
+    if (q) {
+      const hay = [c.name, c.summary, (c.keywords || []).join(" "),
+                   (c.codes || []).join(" ")].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort(SORTS[$("#fSort").value] || SORTS.rec);
+}
+
+const tierClass = (g) => (g === "A+" ? "aplus" : g === "A" ? "a" : "c");
+
+function facetBars(c) {
+  return `<div class="facets">` + FACETS.map((f) => {
+    const v = num(c.scores[f]);
+    const pct = v == null ? 0 : (v / 5) * 100;
+    return `<div class="facet">
+      <span class="fname">${esc(f)}</span>
+      <span class="track"><span class="fill" style="width:${pct.toFixed(1)}%"></span></span>
+      <span class="fval">${v == null ? "—" : v}</span>
+    </div>`;
+  }).join("") + `</div>`;
+}
+
+function whyBlock(c) {
+  const keys = Object.keys(c.why || {}).filter((k) => c.why[k]);
+  if (!keys.length) return "";
+  return `<details class="why"><summary>判斷理由（${keys.length} 項）</summary><dl>` +
+    keys.map((k) => `<dt>${esc(k)}</dt><dd>${esc(c.why[k])}</dd>`).join("") +
+    `</dl></details>`;
+}
+
+function render() {
+  const list = current();
+  $("#count").textContent =
+    `符合 ${list.length} 門課（全部 ${courses.length} 門）` +
+    (list.length ? `　·　推薦均值中位數 ${median(list.map((c) => num(c.rec)).filter((v) => v != null))}` : "");
+  $("#cards").innerHTML = list.length ? list.map((c) => `
+    <article class="card">
+      <div class="top">
+        <h3>${esc(c.name)}</h3>
+        ${c.grade ? `<span class="chip tier ${tierClass(c.grade)}">${esc(c.grade)}
+          ${c.rec != null ? "· 均值 " + c.rec : ""}</span>` : ""}
+        ${c.cid ? `<span class="cid">課號 ${esc(c.cid)}</span>` : ""}
+      </div>
+      <div class="chips">
+        ${(c.caps || []).map((x) => `<span class="chip cap">能力 ${esc(x)}</span>`).join("")}
+        ${c.diff ? `<span class="chip">${esc(c.diff)}</span>` : ""}
+        ${c.pace ? `<span class="chip">${esc(c.pace)}</span>` : ""}
+        ${AUD.filter((a) => c.aud && c.aud[a]).map((a) => `<span class="chip">${esc(a)}</span>`).join("")}
+        ${c.hours ? `<span class="chip">${esc(c.hours)} 小時</span>` : ""}
+      </div>
+      ${c.summary ? `<p class="summary">${esc(c.summary)}</p>` : ""}
+      ${facetBars(c)}
+      ${(c.keywords || []).length ? `<div class="chips">${
+        c.keywords.slice(0, 10).map((k) => `<span class="chip">${esc(k)}</span>`).join("")}</div>` : ""}
+      ${c.diverge ? `<p class="diverge">⚠ 多次呼叫分歧：${esc(c.diverge)}</p>` : ""}
+      ${whyBlock(c)}
+    </article>`).join("") : `<p class="empty">沒有符合條件的課程。</p>`;
+  drawTable(list);
+}
+
+function median(a) {
+  if (!a.length) return "—";
+  const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
+  return (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2).toFixed(2);
+}
+
+/* ---------- 圖表 ---------- */
+function svgEl(tag, attrs) {
+  const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/**
+ * 水平長條圖。單一量測 → 單一色（slot 1）；類別由軸標籤承載，不另上色。
+ * 每根長條有 hover tooltip，資料末端 4px 圓角，貼齊基線。
+ */
+function hbars(rows, opts) {
+  const o = Object.assign({ w: 440, rowH: 30, pad: 150, max: null, unit: "",
+                            color: "var(--series-1)", fmt: (v) => v }, opts || {});
+  // 分組：標記 group 的列前面多留一點空白，讓「同欄兩條」視覺上成一組
+  const tops = [];
+  let cursor = 6;
+  rows.forEach((r, i) => {
+    if (r.group && i > 0) cursor += 10;
+    tops.push(cursor);
+    cursor += o.rowH;
+  });
+  const plotH = cursor;
+  const h = plotH + 26;
+  const max = o.max ?? Math.max(1, ...rows.map((r) => r.v));
+  const plotW = o.w - o.pad - 46;
+  const svg = svgEl("svg", { viewBox: `0 0 ${o.w} ${h}`, role: "img" });
+
+  [0, 0.5, 1].forEach((t) => {
+    const x = o.pad + plotW * t;
+    svg.appendChild(svgEl("line", { class: t === 0 ? "baseline" : "gridline",
+      x1: x, x2: x, y1: 0, y2: plotH }));
+    const tx = svgEl("text", { class: "tick", x: x, y: h - 8,
+      "text-anchor": t === 0 ? "start" : t === 1 ? "end" : "middle" });
+    tx.textContent = o.fmt(max * t);
+    svg.appendChild(tx);
+  });
+
+  rows.forEach((r, i) => {
+    const y = tops[i];
+    const g = svgEl("g", { class: "hit" });
+    const label = svgEl("text", { x: o.pad - 10, y: y + 13, "text-anchor": "end",
+      class: "tick" });
+    label.textContent = r.k;
+    g.appendChild(label);
+    const bw = Math.max(2, (r.v / max) * plotW);
+    g.appendChild(svgEl("rect", { class: "bar", x: o.pad, y: y + 3, width: bw,
+      height: 11, rx: 4, fill: r.color || o.color }));
+    const vl = svgEl("text", { class: "vlabel", x: o.pad + bw + 7, y: y + 13 });
+    vl.textContent = o.fmt(r.v) + o.unit;
+    g.appendChild(vl);
+    const tipHead = r.k || (i > 0 ? rows[i - 1].k : "") || "";
+    bindTip(g, (tipHead ? `<b>${esc(tipHead)}</b><br>` : "") +
+      esc(o.fmt(r.v) + o.unit) + (r.note ? `<br>${esc(r.note)}` : ""));
+    svg.appendChild(g);
+  });
+  return svg;
+}
+
+function card(title, note, node, legend) {
+  const d = document.createElement("div");
+  d.className = "chartcard";
+  d.innerHTML = `<h3>${esc(title)}</h3><p class="note">${esc(note)}</p>` +
+    (legend || "");
+  d.appendChild(node);
+  return d;
+}
+
+function drawCharts() {
+  const box = $("#charts");
+  box.innerHTML = "";
+  const list = courses;
+
+  // 1) 評級分布 —— 有序分級 → 單一色調的序數梯階（深=高階）
+  const tiers = ["A+", "A", "C"].map((g) => ({
+    k: g, v: list.filter((c) => c.grade === g).length,
+    color: `var(--tier-${tierClass(g)})`,
+    note: g === "C" ? "未達 A 級門檻，不納入主題套裝" :
+          g === "A+" ? "得重複納入不同套裝" : "全數納入主題套裝",
+  })).filter((r) => r.v > 0);
+  if (tiers.length) {
+    box.appendChild(card("課程評級分布",
+      `依推薦均值門檻 A ≥ ${DATA.thresholds.a}、A+ ≥ ${DATA.thresholds.aplus} 切分`,
+      hbars(tiers, { pad: 54, unit: " 門" })));
+  }
+
+  // 2) 能力標籤分布（單一量測：課程數）
+  const capCount = {};
+  list.forEach((c) => (c.caps || []).forEach((x) => (capCount[x] = (capCount[x] || 0) + 1)));
+  const caps = Object.keys(capCount).sort().map((k) => ({
+    k: "能力 " + k, v: capCount[k], note: DATA.capNames[k] || "",
+  }));
+  if (caps.length) {
+    box.appendChild(card("能力標籤涵蓋課程數",
+      "一門課可同時對應多項能力，故總和大於課程數",
+      hbars(caps, { pad: 78, unit: " 門" })));
+  }
+
+  // 3) 六面向平均
+  const facetRows = [...FACETS, "推薦度"].map((f) => {
+    const vals = list.map((c) => num(f === "推薦度" ? c.aiRec : c.scores[f]))
+                     .filter((v) => v != null);
+    return {
+      k: f,
+      v: vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2) : 0,
+      note: `${vals.length} 門課有分數`,
+    };
+  });
+  box.appendChild(card("各評分面向平均（滿分 5）",
+    "推薦度為 AI 單方分數；最終推薦均值另併入同學兩票",
+    hbars(facetRows, { pad: 96, max: 5, fmt: (v) => v.toFixed(2) })));
+
+  // 4) 難易度 / 節奏
+  const mk = (key, title, note) => {
+    const cnt = {};
+    list.forEach((c) => { if (c[key]) cnt[c[key]] = (cnt[c[key]] || 0) + 1; });
+    const rows = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])
+                       .map((k) => ({ k, v: cnt[k] }));
+    if (rows.length) box.appendChild(card(title, note, hbars(rows, { pad: 92, unit: " 門" })));
+  };
+  mk("diff", "難易度分布", "是否需要程式基礎是最常被問到的篩選條件");
+  mk("pace", "課程節奏分布", "依語速、贅詞密度與截圖資訊密度三步判定");
+}
+
+/* ---------- 一致性 ---------- */
+function drawAgree() {
+  const box = $("#agree");
+  const a = DATA.agreement;
+  if (!a || !a.rows || !a.rows.length) {
+    box.innerHTML = `<p class="empty">尚無真人標註比對資料。<br>
+      執行 <code>python compare_students.py --students 同學標註.xlsx</code> 後重新產生儀表板即可顯示。</p>`;
+    return;
+  }
+  box.innerHTML = `<div class="notice">${a.notice || ""}</div>`;
+  const legend = `<div class="legend">
+    <span><i style="background:var(--series-1)"></i>AI 與同學一致率</span>
+    <span><i style="background:var(--series-2)"></i>同學兩人之間一致率（同欄對照基準）</span>
+  </div>`;
+
+  // 每個欄位一組：上列 AI、下列同學之間，共用左側欄位名稱
+  const rows = [];
+  a.rows.forEach((r) => {
+    const paired = r.human != null;
+    rows.push({ k: r.field, v: r.ai, color: "var(--series-1)",
+                note: `AI vs 同學　n=${r.n}`, group: true });
+    if (paired) {
+      rows.push({ k: "", v: r.human, color: "var(--series-2)",
+                  note: `同學 vs 同學　n=${r.n}`, gap: 0 });
+    }
+  });
+  box.appendChild(card("逐欄一致率",
+    "一致率 = 兩軌判定相同的課程占比。單看 AI 那一條無法判斷好壞，須與同欄下方的同學對照基準並讀",
+    hbars(rows, { w: 1020, pad: 150, max: 100, unit: "%", rowH: 22,
+                  fmt: (v) => v.toFixed(0) }), legend));
+
+  const t = document.createElement("div");
+  t.className = "tablewrap";
+  t.style.marginTop = "16px";
+  t.innerHTML = `<table><thead><tr>
+      <th>欄位</th><th>型別</th><th>統計量</th><th>值</th>
+      <th>AI 一致率</th><th>同學之間</th><th>可比對課數</th><th>判讀</th>
+    </tr></thead><tbody>` + a.rows.map((r) => `<tr>
+      <td>${esc(r.field)}</td><td>${esc(r.type || "")}</td>
+      <td>${esc(r.metric || "")}</td>
+      <td class="num">${r.value == null ? "—" : r.value.toFixed(3)}</td>
+      <td class="num">${r.ai == null ? "—" : r.ai.toFixed(1) + "%"}</td>
+      <td class="num">${r.human == null ? "—" : r.human.toFixed(1) + "%"}</td>
+      <td class="num">${esc(r.n ?? "")}</td>
+      <td>${esc(r.interp || "")}</td></tr>`).join("") + `</tbody></table>`;
+  box.appendChild(t);
+}
+
+/* ---------- 套裝 ---------- */
+(function drawBundles() {
+  const box = $("#bundles");
+  if (!DATA.bundles || !DATA.bundles.length) {
+    box.innerHTML = `<p class="empty">尚無主題套裝資料。<br>
+      執行 <code>python build_bundles.py --source 定稿標籤表.xlsx</code> 後重新產生儀表板即可顯示。</p>`;
+    return;
+  }
+  box.innerHTML = `<div class="notice">
+      套裝編號有意義：先依修課門檻分軌（零基礎可修 → 需程式基礎 → 特定領域），
+      軌內再依先修關係排列，<b>編號越小門檻越低</b>。
+      課程順序即建議修課路徑。只有 A 級以上課程會納入；A＋ 級可重複出現於不同套裝，
+      作為各主題軌的共用錨點。
+    </div>` + DATA.bundles.map((b) => `
+    <article class="bundle">
+      <h3>${esc(b.bid ? b.bid + "　" : "")}${esc(b.title)}</h3>
+      <p class="bmeta">${esc(b.n)} 門　·　${esc(b.hours)} 小時　·　推薦均值 ${esc(b.avg_rec)}
+        ${b.track ? "　·　" + esc(b.track) : ""}</p>
+      ${b.desc ? `<p class="summary">${esc(b.desc)}</p>` : ""}
+      <ol>${(b.course_names || []).map((n) => `<li>${esc(n)}</li>`).join("")}</ol>
+      ${b.target || b.prereq ? `<div class="chips">
+        ${b.target ? `<span class="chip">適合：${esc(b.target)}</span>` : ""}
+        ${b.prereq ? `<span class="chip">先修：${esc(b.prereq)}</span>` : ""}</div>` : ""}
+      ${(b.codes || []).length ? `<div class="chips">${
+        b.codes.map((c) => `<span class="chip cap">${esc(c)}</span>`).join("")}</div>` : ""}
+      ${b.path_note || (b.goals || []).length ? `<details class="why">
+        <summary>修課路徑說明與學習目標</summary>
+        ${b.path_note ? `<p class="summary">${esc(b.path_note)}</p>` : ""}
+        ${(b.goals || []).length ? `<dl><dt>修完後應能</dt>${
+          b.goals.map((g) => `<dd>· ${esc(g)}</dd>`).join("")}</dl>` : ""}
+      </details>` : ""}
+    </article>`).join("");
+})();
+
+/* ---------- 資料表 ---------- */
+const TCOLS = [
+  ["課程名稱", (c) => c.name, false],
+  ["課號", (c) => c.cid, false],
+  ["評級", (c) => c.grade, false],
+  ["推薦均值", (c) => c.rec, true],
+  ["AI 推薦度", (c) => c.aiRec, true],
+  ["能力標籤", (c) => (c.caps || []).join("、"), false],
+  ["難易度", (c) => c.diff, false],
+  ["課程節奏", (c) => c.pace, false],
+  ...FACETS.map((f) => [f, (c) => c.scores[f], true]),
+  ["修課對象", (c) => AUD.filter((a) => c.aud && c.aud[a]).join("、"), false],
+  ["時數", (c) => c.hours || "", true],
+  ["細項代碼", (c) => (c.codes || []).join("、"), false],
+];
+let sortCol = null, sortAsc = true, lastList = [];
+
+function drawTable(list) {
+  lastList = list;
+  const th = TCOLS.map(([k], i) =>
+    `<th data-i="${i}">${esc(k)}${sortCol === i ? (sortAsc ? " ▲" : " ▼") : ""}</th>`).join("");
+  $("#tbl thead").innerHTML = `<tr>${th}</tr>`;
+  let rows = [...list];
+  if (sortCol != null) {
+    const [, get, isNum] = TCOLS[sortCol];
+    rows.sort((a, b) => {
+      const x = get(a), y = get(b);
+      if (isNum) return ((num(x) ?? -Infinity) - (num(y) ?? -Infinity)) * (sortAsc ? 1 : -1);
+      return String(x ?? "").localeCompare(String(y ?? ""), "zh-Hant") * (sortAsc ? 1 : -1);
+    });
+  }
+  $("#tbl tbody").innerHTML = rows.map((c) => "<tr>" + TCOLS.map(([, get, isNum]) => {
+    const v = get(c);
+    return `<td class="${isNum ? "num" : ""}">${esc(v == null || v === "" ? "—" : v)}</td>`;
+  }).join("") + "</tr>").join("");
+  $("#tbl thead").querySelectorAll("th").forEach((el) => {
+    el.addEventListener("click", () => {
+      const i = +el.dataset.i;
+      if (sortCol === i) sortAsc = !sortAsc; else { sortCol = i; sortAsc = true; }
+      drawTable(lastList);
+    });
+  });
+}
+
+$("#csv").addEventListener("click", () => {
+  const q = (s) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+  const body = [TCOLS.map(([k]) => q(k)).join(",")].concat(
+    lastList.map((c) => TCOLS.map(([, get]) => q(get(c))).join(","))).join("\r\n");
+  const blob = new Blob(["﻿" + body], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "課程評分表.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+render();
+</script>
+</body>
+</html>

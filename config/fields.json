@@ -1,0 +1,51 @@
+{
+  "_comment": [
+    "19 個輸出欄位的定義、整合規則與驗證規則。",
+    "舊版將欄位名稱寫死在 merge_agent_results()、parse_and_validate_json() 與 SYSTEM_PROMPT 三處；",
+    "本檔把前兩處抽成資料，換領域時只需改這份檔與 config/prompt.txt。",
+    "merge 可用值：mean(平均) / majority(多數決) / vote(票數門檻) / any(任一即真) / longest(取最長文字)"
+  ],
+
+  "score_range": [1, 5],
+
+  "fields": [
+    { "name": "能力標籤",     "type": "list",   "merge": "vote",     "min_votes": 2, "min_votes_when_few_agents": 1,
+      "normalize": "leading_letter", "allowed": ["A", "B", "C", "D"], "required": true },
+
+    { "name": "難易度",       "type": "choice", "merge": "majority", "allowed": ["基礎", "進階"], "required": true },
+
+    { "name": "課程節奏",     "type": "choice", "merge": "majority",
+      "allowed": ["精煉流暢", "需開倍速", "拖泥帶水", "需人工確認"], "required": true },
+
+    { "name": "通識素養型",   "type": "bool",   "merge": "any" },
+    { "name": "跨域應用型",   "type": "bool",   "merge": "any" },
+    { "name": "技術實作型",   "type": "bool",   "merge": "any" },
+
+    { "name": "趣味度",       "type": "number", "merge": "mean", "required": true },
+    { "name": "內容深度",     "type": "number", "merge": "mean", "required": true },
+    { "name": "實作程度",     "type": "number", "merge": "mean", "required": true },
+    { "name": "結構清晰度",   "type": "number", "merge": "mean", "required": true },
+    { "name": "應用廣度",     "type": "number", "merge": "mean", "required": true },
+    { "name": "推薦度",       "type": "number", "merge": "mean", "required": true },
+
+    { "name": "關鍵字",       "type": "list", "merge": "vote", "min_votes": 2, "min_votes_when_few_agents": 1,
+      "fallback_first_agent": true },
+    { "name": "細項代碼",     "type": "list", "merge": "vote", "min_votes": 2, "min_votes_when_few_agents": 1,
+      "fallback_first_agent": true },
+    { "name": "先備知識",     "type": "list", "merge": "vote", "min_votes": 1, "fallback_first_agent": true },
+    { "name": "對應職務角色", "type": "list", "merge": "vote", "min_votes": 1, "fallback_first_agent": true },
+    { "name": "對應職場技能", "type": "list", "merge": "vote", "min_votes": 1, "fallback_first_agent": true },
+
+    { "name": "課程摘要",     "type": "text", "merge": "longest", "required": true },
+
+    { "name": "判斷原因",     "type": "dict", "merge": "longest_per_key",
+      "keys": ["能力標籤原因", "難易度原因", "修課對象原因", "評分原因",
+               "推薦度原因", "課程節奏原因", "先備職場原因"] }
+  ],
+
+  "derived_rules": [
+    { "_comment": "一致性補強：有實作必為技術實作型",
+      "if": { "field": "實作程度", "op": ">=", "value": 3 },
+      "then": { "field": "技術實作型", "value": true } }
+  ]
+}
