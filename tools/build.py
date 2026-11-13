@@ -150,6 +150,8 @@ def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="打包 Windows exe 與交付 zip")
     ap.add_argument("--release-dir", type=Path, default=RELEASE_DIR,
                     help="exe 與 zip 的輸出目錄")
+    ap.add_argument("--only", action="append", metavar="NAME",
+                    help="只重建指定的 exe（可重複指定）；其餘沿用 release/ 內既有的檔案")
     ap.add_argument("--skip-exe", action="store_true",
                     help="只重新打包 zip，不重建 exe")
     ap.add_argument("--work-dir", type=Path, default=BUILD_ROOT,
@@ -165,7 +167,16 @@ def main() -> None:
     if not args.skip_exe:
         ensure_pyinstaller()
         print(f"暫存目錄：{args.work_dir}")
-        for script_name, exe_name in TARGETS:
+        targets = TARGETS
+        if args.only:
+            wanted = {n.removesuffix(".py").removesuffix(".exe") for n in args.only}
+            unknown = wanted - {e for _, e in TARGETS}
+            if unknown:
+                raise SystemExit(
+                    f"未知的打包目標：{sorted(unknown)}；"
+                    f"可用目標：{[e for _, e in TARGETS]}")
+            targets = [t for t in TARGETS if t[1] in wanted]
+        for script_name, exe_name in targets:
             script = ROOT_DIR / script_name
             if not script.exists():
                 raise SystemExit(f"找不到原始程式：{script}")
