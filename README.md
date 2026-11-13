@@ -31,6 +31,8 @@
 AI 只佔三票之一。實測佐證：**AI 在推薦度從未給過 5 分，平均較同學嚴格 0.45 分**，
 9 門 A+ 課程全部是靠同學的高分推上去的。
 
+> 下列畫面由 `tools/shoot_dashboard.py` 自實際輸出重新產生，改版後重跑即可，不會與程式對不上。
+
 ![儀表板總覽](references/1-overview.jpg)
 
 ![逐課明細](references/2-courses.jpg)
@@ -225,7 +227,8 @@ corpus.py           語料清點（影片、音訊、逐字稿數量與完整性
 ├─ references/                 # 儀表板畫面
 ├─ release/                    # exe 與 release-win.zip
 └─ tools/
-    ├─ build.py                # 打包 exe
+    ├─ build.py                # 打包 exe（--only 可單獨重建一支）
+    ├─ shoot_dashboard.py      # 重新產生 README 的儀表板截圖
     └─ test_llm.py             # 連線與設定自我檢查
 ```
 
