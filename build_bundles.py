@@ -130,7 +130,7 @@ def main() -> None:
         rpath = Path(args.results)
         if not rpath.exists():
             print(f"[錯誤] 找不到 {args.source or rpath}。\n"
-                  f"       請用 --source 指定定稿標籤表，或先執行 rate_courses.py。",
+                  f"       請用 --source 指定定稿標籤表，或先執行 {mc.cmd('rate_courses')}。",
                   file=sys.stderr)
             sys.exit(1)
         if args.source:
@@ -193,7 +193,7 @@ def main() -> None:
                         c.get("diff", ""), c.get("hours", "")])
 
     print(f"\n已輸出：{args.output}、{args.grades_csv}")
-    print("下一步：python build_dashboard.py")
+    print(f"下一步：{mc.cmd('build_dashboard')}")
 
     if errors and args.strict:
         sys.exit(1)

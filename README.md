@@ -89,7 +89,7 @@ pip install -e .[fetch]          # 再加 ① 平臺抓取
 pip install -e .[all]            # 完整管線
 
 playwright install chromium      # 只有要跑 ① 時需要
-cp .env.example .env             # 填入 ANTHROPIC_API_KEY
+copy .env.example .env           # macOS/Linux: cp .env.example .env
 ```
 
 `whisper`／`opencv` 僅由前處理相關函式使用（`moocs_core` 以函式內延遲載入），
@@ -272,14 +272,30 @@ temperature **刻意未設定** —— 該模型帶此參數會回 400。
 | 課程評級 | A+ 9 門 / A 18 門 / C 32 門 |
 | 主題套裝 | 9 組 · 納入 27 門 |
 
+`data/` 內的檔案：
+
+| 檔案 | 內容 | 可否對外 |
+|---|---|---|
+| `analysis_results.json` | 59 門課的 AI 評分結果（含判斷理由、分歧標記）| 可 |
+| `moocs_queue.json` | 課程清單、章節結構、819 支影片位址 | 可 |
+| `AI_vs_同學_比對結果.json` | 一致性指標（**已去識別化，無姓名**）| 可 |
+| `磨課師AI課程能力分類標籤表_定稿(AI+同學).xlsx` | 三票併入後的定稿表（課程層級彙總，無個資）| 可 |
+| `corpus_manifest.json` | 語料清點（影片、音訊、逐字稿數量與雜湊）| 可 |
+
+同學標註原始表含姓名與自由填答，**不在本 repo 內**。
+
+不必跑前面的步驟，用內附資料就能產生儀表板：
+
 ```bash
-# 用內附資料直接看儀表板長什麼樣
-python build_bundles.py --source "磨課師AI課程能力分類標籤表_定稿(AI+同學).xlsx" \
-    --output data/bundles.json
+python build_bundles.py --source "data/磨課師AI課程能力分類標籤表_定稿(AI+同學).xlsx" \
+    --output data/bundles.json --grades-csv data/course_grades.csv
 python build_dashboard.py --results data/analysis_results.json \
     --bundles data/bundles.json --compare "data/AI_vs_同學_比對結果.json" \
     --queue data/moocs_queue.json --output data/dashboard.html
 ```
+
+跑出來應該是 **A+ 9 門 / A 18 門 / C 32 門、主題套裝 9 組 27 門**，
+與本節表格一致 —— 可用來確認安裝無誤。
 
 ---
 

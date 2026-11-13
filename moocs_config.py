@@ -33,7 +33,17 @@ from pathlib import Path
 __all__ = [
     "config_dir", "load_prompt", "load_fields", "load_pipeline",
     "merge_results", "validate_result", "score_fields", "reason_keys",
+    "cmd",
 ]
+
+
+def cmd(script: str) -> str:
+    """把腳本名轉成使用者該輸入的指令。
+
+    打包成 exe 後要說 `build_dashboard`，而不是 `python build_dashboard.py`。
+    """
+    name = script.removesuffix(".py")
+    return name if getattr(sys, "frozen", False) else f"python {name}.py"
 
 
 # ==========================================

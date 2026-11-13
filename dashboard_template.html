@@ -616,7 +616,7 @@ function drawAgree() {
   const a = DATA.agreement;
   if (!a || !a.rows || !a.rows.length) {
     box.innerHTML = `<p class="empty">尚無真人標註比對資料。<br>
-      執行 <code>python compare_students.py --students 同學標註.xlsx</code> 後重新產生儀表板即可顯示。</p>`;
+      執行 <code>${esc(DATA.cmd.compare)} --students 同學標註.xlsx</code> 後重新產生儀表板即可顯示。</p>`;
     return;
   }
   box.innerHTML = `<div class="notice">${a.notice || ""}</div>`;
@@ -663,7 +663,7 @@ function drawAgree() {
   const box = $("#bundles");
   if (!DATA.bundles || !DATA.bundles.length) {
     box.innerHTML = `<p class="empty">尚無主題套裝資料。<br>
-      執行 <code>python build_bundles.py --source 定稿標籤表.xlsx</code> 後重新產生儀表板即可顯示。</p>`;
+      執行 <code>${esc(DATA.cmd.bundles)} --source 定稿標籤表.xlsx</code> 後重新產生儀表板即可顯示。</p>`;
     return;
   }
   box.innerHTML = `<div class="notice">

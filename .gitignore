@@ -27,10 +27,14 @@ merged/
 /data/course_grades.csv
 /data/dashboard.html
 
-# ── 同學標註原始表（含姓名與自由填答，標示「請勿外流」）──
-*同學*.xlsx
-*回覆*.xlsx
+# ── 真人標註原始表（含姓名與自由填答，標示「請勿外流」）──
+# 注意：data/ 下的「…定稿(AI+同學).xlsx」是課程層級彙總、不含個資，要進版控，
+# 所以這裡不可以用 *同學*.xlsx 這種寬鬆比對。
 *請勿外流*
+*回覆表*.xlsx
+*標註表*.xlsx
+*學習狀況截圖*.xlsx
+/能力分類標籤表*.xlsx
 
 # ── Python ──
 .venv/

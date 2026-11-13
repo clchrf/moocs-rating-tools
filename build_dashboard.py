@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -66,26 +67,67 @@ def find_template() -> Path:
 
 
 # ==========================================
-def build_courses(results, bundles_payload, queue, compare) -> list[dict]:
-    """把各來源併成儀表板用的課程列表。以課名為主鍵，課號由其他來源補上。"""
-    # 課名 → 課號、章節數、影片數
-    meta: dict[str, dict] = {}
-    for c in (queue or []):
-        name = c.get("courseName") or ""
-        if name:
-            meta[name] = {
-                "cid": str(c.get("courseId") or ""),
-                "videos": len(c.get("videoIds", [])) + len(c.get("mp4Urls", [])),
-                "chapters": len(c.get("chapters", [])),
-            }
-    # 課名 → 開課單位（來自去識別化比對結果）
-    orgs = {c.get("name", ""): c.get("org", "") for c in ((compare or {}).get("courses") or [])}
+#: 同名課在結果中會寫成「課名（10002646）」，以括號內的課號消歧義
+_CID_IN_NAME = re.compile(r"[（(](\d{6,})[)）]\s*$")
 
-    # 課名 → 評級與推薦均值（三票併入後的結果）
-    grades: dict[str, dict] = {}
-    for c in ((bundles_payload or {}).get("courses") or []):
+
+def split_cid(name: str) -> tuple[str, str]:
+    """把「課名（課號）」拆成 (純課名, 課號)；沒有括號課號時課號為空字串。"""
+    m = _CID_IN_NAME.search(name or "")
+    return (name[:m.start()].strip(), m.group(1)) if m else (name or "", "")
+
+
+def build_courses(results, bundles_payload, queue, compare) -> list[dict]:
+    """把各來源併成儀表板用的課程列表。
+
+    對應以課號優先、課名其次：平臺上有 3 組同名課，分析結果會寫成
+    「課名（課號）」來消歧義，只靠課名會對不回佇列而少算影片數。
+    """
+    by_cid: dict[str, dict] = {}
+    by_name: dict[str, dict] = {}
+    for c in (queue or []):
+        entry = {
+            "cid": str(c.get("courseId") or ""),
+            "videos": len(c.get("videoIds", [])) + len(c.get("mp4Urls", [])),
+            "chapters": len(c.get("chapters", [])),
+        }
+        if entry["cid"]:
+            by_cid[entry["cid"]] = entry
+        name = c.get("courseName") or ""
+        if name and name not in by_name:      # 同名課只留第一筆當後備
+            by_name[name] = entry
+
+    # 課名 → 課號的後備對照。佇列中有課程抓不到課名（平臺未提供），
+    # 其課名是後來自官方清單補上的，只能靠這份對照接回去。
+    name_to_cid: dict[str, str] = {}
+    for c in ((compare or {}).get("courses") or []):
+        if c.get("name") and c.get("courseId"):
+            name_to_cid.setdefault(c["name"], str(c["courseId"]))
+
+    def lookup(result_name: str) -> dict:
+        plain, cid = split_cid(result_name)
+        if cid and cid in by_cid:
+            return by_cid[cid]
+        hit = by_name.get(result_name) or by_name.get(plain)
+        if hit:
+            return hit
+        alt = name_to_cid.get(result_name) or name_to_cid.get(plain)
+        return by_cid.get(alt, {}) if alt else {}
+    # 開課單位（來自去識別化比對結果，以課號為主鍵）
+    orgs_by_cid, orgs_by_name = {}, {}
+    for c in ((compare or {}).get("courses") or []):
+        if c.get("courseId"):
+            orgs_by_cid[str(c["courseId"])] = c.get("org", "")
         if c.get("name"):
-            grades[c["name"]] = c
+            orgs_by_name.setdefault(c["name"], c.get("org", ""))
+
+    # 評級與推薦均值（三票併入後的結果）
+    grades_by_cid, grades_by_name = {}, {}
+    for c in ((bundles_payload or {}).get("courses") or []):
+        if c.get("cid"):
+            grades_by_cid[str(c["cid"])] = c
+        if c.get("name"):
+            grades_by_name.setdefault(c["name"], c)
 
     out = []
     for rec in results:
@@ -93,13 +135,20 @@ def build_courses(results, bundles_payload, queue, compare) -> list[dict]:
         if not res:
             continue
         name = rec.get("name", "")
-        g = grades.get(name, {})
-        m = meta.get(name, {})
+        plain, name_cid = split_cid(name)
+        m = lookup(name)
+        cid = name_cid or m.get("cid") or ""
+
+        g = (grades_by_cid.get(cid) or grades_by_name.get(name)
+             or grades_by_name.get(plain) or {})
+        org = (orgs_by_cid.get(cid) or orgs_by_name.get(name)
+               or orgs_by_name.get(plain) or "")
+
         scores = {f: res.get(f) for f in FACETS}
         out.append({
             "name": name,
-            "cid": g.get("cid") or m.get("cid") or "",
-            "org": orgs.get(name, ""),
+            "cid": cid or g.get("cid") or "",
+            "org": org,
             "grade": g.get("grade") or "",
             "rec": g.get("avg_rec"),
             "aiRec": res.get("推薦度"),
@@ -203,7 +252,7 @@ def main() -> None:
     results = load_json(Path(args.results))
     if not results:
         print(f"[錯誤] 找不到或無法讀取 {args.results}\n"
-              f"       請先執行：python rate_courses.py", file=sys.stderr)
+              f"       請先執行：{mc.cmd('rate_courses')}", file=sys.stderr)
         sys.exit(1)
 
     bundles_payload = load_json(Path(args.bundles))
@@ -270,12 +319,15 @@ def main() -> None:
                  + f" × {cfg['llm']['num_agents']} 次獨立呼叫"],
         "notice": notice,
         "footer": (
-            "本頁由 <code>build_dashboard.py</code> 自資料檔產生，所有數字即時計算，未手動填寫。"
+            "本頁由 <code>build_dashboard</code> 自資料檔產生，所有數字即時計算，未手動填寫。"
             "<br>資料來源：<code>analysis_results.json</code>"
             + ("、<code>bundles.json</code>" if bundles_payload else "")
             + ("、<code>AI_vs_同學_比對結果.json</code>（已去識別化，無姓名）" if compare else "")
             + "<br>同學標註原始表含姓名與自由填答，標示「請勿外流」，不納入本頁。"
         ),
+        "cmd": {"bundles": mc.cmd("build_bundles"),
+                "compare": mc.cmd("compare_students"),
+                "rate": mc.cmd("rate_courses")},
         "tiles": tiles,
         "thresholds": th,
         "capNames": CAP_NAMES,

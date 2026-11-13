@@ -261,7 +261,7 @@ python compare_students.py --students 同學標註.xlsx
 有了同學標註之後，用定稿標籤表跑正式模式：
 
 ```bash
-python build_bundles.py --source "磨課師AI課程能力分類標籤表_定稿(AI+同學).xlsx"
+python build_bundles.py --source "data/磨課師AI課程能力分類標籤表_定稿(AI+同學).xlsx"
 ```
 
 ```text
@@ -333,7 +333,8 @@ python build_traceability.py
 `data/` 收錄本計畫 59 門課的實際結果，不需跑前面的步驟就能產生儀表板：
 
 ```bash
-python build_bundles.py --results data/analysis_results.json --output data/bundles.json
+python build_bundles.py --source "data/磨課師AI課程能力分類標籤表_定稿(AI+同學).xlsx" \
+    --output data/bundles.json --grades-csv data/course_grades.csv
 python build_dashboard.py --results data/analysis_results.json \
     --bundles data/bundles.json \
     --compare "data/AI_vs_同學_比對結果.json" \

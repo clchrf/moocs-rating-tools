@@ -263,7 +263,7 @@ def main() -> None:
     print(f"已輸出：{args.results}、{args.output}、{args.failed}")
     if pending:
         print(f"尚有 {len(pending)} 門未完成，見 {args.failed}；直接重跑本程式即可續做")
-    print("下一步：python compare_students.py（有同學標註）或 python build_bundles.py")
+    print(f"下一步：{mc.cmd('compare_students')}（有同學標註）或 {mc.cmd('build_bundles')}")
 
 
 if __name__ == "__main__":

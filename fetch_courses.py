@@ -324,7 +324,7 @@ def main() -> None:
 
     print_summary(results)
     print(f"已輸出：{output}")
-    print("下一步：python preprocess_courses.py")
+    print(f"下一步：{mc.cmd('preprocess_courses')}")
 
 
 if __name__ == "__main__":

@@ -25,16 +25,23 @@ tools/build.py
 from __future__ import annotations
 
 import argparse
+import hashlib
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 RELEASE_DIR = ROOT_DIR / "release"
-BUILD_ROOT = ROOT_DIR / "build" / "pyinstaller"
 ZIP_NAME = "release-win.zip"
+
+# PyInstaller 的暫存目錄放在系統 temp，不放專案內。
+# 專案若位於 OneDrive／Dropbox 等同步資料夾，同步程式會在打包過程中鎖住
+# localpycs 等暫存檔，造成 PermissionError: [WinError 5]。
+_TAG = hashlib.sha1(str(ROOT_DIR).encode("utf-8")).hexdigest()[:8]
+BUILD_ROOT = Path(tempfile.gettempdir()) / f"moocs-rating-build-{_TAG}"
 
 TARGETS = (
     ("rate_courses.py", "rate_courses"),
@@ -76,9 +83,10 @@ def ensure_pyinstaller() -> None:
         ) from exc
 
 
-def run_pyinstaller(script: Path, exe_name: str, release_dir: Path) -> None:
-    work_dir = BUILD_ROOT / exe_name / "work"
-    spec_dir = BUILD_ROOT / exe_name / "spec"
+def run_pyinstaller(script: Path, exe_name: str, release_dir: Path,
+                    build_root: Path = BUILD_ROOT) -> None:
+    work_dir = build_root / exe_name / "work"
+    spec_dir = build_root / exe_name / "spec"
     for d in (work_dir, spec_dir, release_dir):
         d.mkdir(parents=True, exist_ok=True)
 
@@ -144,8 +152,10 @@ def parse_args() -> argparse.Namespace:
                     help="exe 與 zip 的輸出目錄")
     ap.add_argument("--skip-exe", action="store_true",
                     help="只重新打包 zip，不重建 exe")
+    ap.add_argument("--work-dir", type=Path, default=BUILD_ROOT,
+                    help="PyInstaller 暫存目錄（預設在系統 temp，避開雲端同步資料夾）")
     ap.add_argument("--keep-build", action="store_true",
-                    help="保留 build/ 暫存目錄")
+                    help="保留暫存目錄")
     return ap.parse_args()
 
 
@@ -154,16 +164,17 @@ def main() -> None:
 
     if not args.skip_exe:
         ensure_pyinstaller()
+        print(f"暫存目錄：{args.work_dir}")
         for script_name, exe_name in TARGETS:
             script = ROOT_DIR / script_name
             if not script.exists():
                 raise SystemExit(f"找不到原始程式：{script}")
-            run_pyinstaller(script, exe_name, args.release_dir)
+            run_pyinstaller(script, exe_name, args.release_dir, args.work_dir)
 
     build_zip(args.release_dir)
 
-    if not args.keep_build and BUILD_ROOT.exists():
-        shutil.rmtree(BUILD_ROOT, ignore_errors=True)
+    if not args.keep_build and args.work_dir.exists():
+        shutil.rmtree(args.work_dir, ignore_errors=True)
 
     print("\n打包完成。交付前請確認 zip 內不含 .env、cookies.txt、session.json。")
 

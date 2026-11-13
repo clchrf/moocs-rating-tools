@@ -84,7 +84,7 @@ def main() -> None:
     queue_path = Path(args.queue)
     if not queue_path.exists():
         print(f"[錯誤] 找不到課程佇列 {queue_path}\n"
-              f"       請先執行：python fetch_courses.py", file=sys.stderr)
+              f"       請先執行：{mc.cmd('fetch_courses')}", file=sys.stderr)
         sys.exit(1)
 
     queue = json.loads(queue_path.read_text(encoding="utf-8"))
@@ -173,7 +173,7 @@ def main() -> None:
     mins = (time.time() - t0) / 60
     print(f"\n前處理完成：本次處理 {processed} 門、已存在跳過 {skipped} 門、無法處理 {failed} 門")
     print(f"耗時 {mins:.1f} 分鐘")
-    print(f"下一步：python rate_courses.py")
+    print(f"下一步：{mc.cmd('rate_courses')}")
 
 
 if __name__ == "__main__":
